@@ -1,0 +1,6 @@
+_extends: .github
+repository:
+  name: probot-scaffolder
+  description: opinionated scaffolder for Probot projects
+  homepage: 'https://npm.im/@form8ion/probot-scaffolder'
+  private: false
