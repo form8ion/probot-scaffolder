@@ -12,6 +12,7 @@ suite('scaffold', () => {
     sandbox = sinon.createSandbox();
 
     sandbox.stub(fs, 'copyFile');
+    sandbox.stub(fs, 'writeFile');
   });
 
   teardown(() => sandbox.restore());
@@ -19,13 +20,33 @@ suite('scaffold', () => {
   test('that probot is initialized', async () => {
     const projectRoot = any.string();
 
-    const {dependencies, devDependencies} = await scaffold({projectRoot});
+    const {dependencies, devDependencies, scripts} = await scaffold({projectRoot});
 
     assert.calledWith(
-      fs.copyFile, resolve(__dirname, '..', 'templates', '.env.example'),
+      fs.copyFile,
+      resolve(__dirname, '..', 'templates', '.env.example'),
       `${projectRoot}/.env.example`
+    );
+    assert.calledWith(
+      fs.writeFile,
+      `${projectRoot}/nodemon.json`,
+      JSON.stringify({
+        env: {NODE_ENV: 'development'},
+        exec: 'babel-node',
+        watch: [
+          'src/',
+          '.env'
+        ]
+      })
     );
     assert.deepEqual(dependencies, ['probot']);
     assert.deepEqual(devDependencies, ['nodemon', 'smee-client']);
+    assert.deepEqual(
+      scripts,
+      {
+        dev: 'nodemon src/index.js',
+        start: 'probot run ./lib/index.js'
+      }
+    );
   });
 });
