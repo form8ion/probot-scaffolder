@@ -19,11 +19,13 @@ suite('scaffold', () => {
   test('that probot is initialized', async () => {
     const projectRoot = any.string();
 
-    await scaffold({projectRoot});
+    const {dependencies, devDependencies} = await scaffold({projectRoot});
 
     assert.calledWith(
       fs.copyFile, resolve(__dirname, '..', 'templates', '.env.example'),
       `${projectRoot}/.env.example`
     );
+    assert.deepEqual(dependencies, ['probot']);
+    assert.deepEqual(devDependencies, ['nodemon', 'smee-client']);
   });
 });
