@@ -1,8 +1,11 @@
 import {promises as fs} from 'fs';
 import {resolve} from 'path';
+import deepmerge from 'deepmerge';
+import scaffoldIntegrationTesting from './integration-testing';
 
-export default async function ({projectRoot}) {
-  await Promise.all([
+export default async function ({projectRoot, tests}) {
+  const [integrationTestingResults] = await Promise.all([
+    await scaffoldIntegrationTesting({projectRoot, tests}),
     fs.copyFile(resolve(__dirname, '..', 'templates', '.env.example'), `${projectRoot}/.env.example`),
     fs.writeFile(
       `${projectRoot}/nodemon.json`,
@@ -17,12 +20,15 @@ export default async function ({projectRoot}) {
     )
   ]);
 
-  return {
-    scripts: {
-      dev: 'nodemon src/index.js',
-      start: 'probot run ./lib/index.js'
+  return deepmerge(
+    {
+      scripts: {
+        dev: 'nodemon src/index.js',
+        start: 'probot run ./lib/index.js'
+      },
+      dependencies: ['probot'],
+      devDependencies: ['@babel/node', 'nodemon', 'smee-client']
     },
-    dependencies: ['probot'],
-    devDependencies: ['nodemon', 'smee-client']
-  };
+    integrationTestingResults
+  );
 }

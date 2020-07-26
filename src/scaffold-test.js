@@ -1,8 +1,10 @@
 import {promises as fs} from 'fs';
 import {resolve} from 'path';
+import deepmerge from 'deepmerge';
 import sinon from 'sinon';
 import {assert} from 'chai';
 import any from '@travi/any';
+import * as integrationTesting from './integration-testing';
 import scaffold from './scaffold';
 
 suite('scaffold', () => {
@@ -11,6 +13,7 @@ suite('scaffold', () => {
   setup(() => {
     sandbox = sinon.createSandbox();
 
+    sandbox.stub(integrationTesting, 'default');
     sandbox.stub(fs, 'copyFile');
     sandbox.stub(fs, 'writeFile');
   });
@@ -19,8 +22,11 @@ suite('scaffold', () => {
 
   test('that probot is initialized', async () => {
     const projectRoot = any.string();
+    const integrationTestingResults = any.simpleObject();
+    const tests = any.simpleObject();
+    integrationTesting.default.withArgs({projectRoot, tests}).resolves(integrationTestingResults);
 
-    const {dependencies, devDependencies, scripts} = await scaffold({projectRoot});
+    const results = await scaffold({projectRoot, tests});
 
     assert.calledWith(
       fs.copyFile,
@@ -39,14 +45,19 @@ suite('scaffold', () => {
         ]
       })
     );
-    assert.deepEqual(dependencies, ['probot']);
-    assert.deepEqual(devDependencies, ['nodemon', 'smee-client']);
     assert.deepEqual(
-      scripts,
-      {
-        dev: 'nodemon src/index.js',
-        start: 'probot run ./lib/index.js'
-      }
+      results,
+      deepmerge(
+        {
+          dependencies: ['probot'],
+          devDependencies: ['@babel/node', 'nodemon', 'smee-client'],
+          scripts: {
+            dev: 'nodemon src/index.js',
+            start: 'probot run ./lib/index.js'
+          }
+        },
+        integrationTestingResults
+      )
     );
   });
 });
